@@ -1,0 +1,33 @@
+{
+  "name": "Help Motivate Me SaaS (.NET 10)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "workspaceFolder": "/workspaces/help-motivate-me-saas",
+  "mounts": [
+    "source=${localWorkspaceFolder}/../help-motivate-me,target=/workspaces/help-motivate-me,type=bind",
+    "source=help-motivate-me-saas-nuget,target=/home/vscode/.nuget/packages,type=volume"
+  ],
+  "containerEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_NOLOGO": "1"
+  },
+  "forwardPorts": [8088, 8089],
+  "postCreateCommand": "dotnet restore HelpMotivateMe.SaaS.slnx",
+  "postStartCommand": "git config --global --add safe.directory '${containerWorkspaceFolder}' && git config --global --add safe.directory /workspaces/help-motivate-me",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-dotnettools.csdevkit",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "HelpMotivateMe.SaaS.slnx"
+      }
+    }
+  }
+}

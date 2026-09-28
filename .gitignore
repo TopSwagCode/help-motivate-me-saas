@@ -1,0 +1,22 @@
+**/bin/
+**/obj/
+**/TestResults/
+*.trx
+*.coverage
+.env
+.env.*
+!.env.example
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.log
+.DS_Store
+
+# Runtime data and cold backups
+/help-motivate-me-saas-control-plane-*.tar.gz
+*.tar.gz
+*.dump
+/backup/
+backups/

@@ -1,0 +1,10 @@
+services:
+  tenant-image:
+    build:
+      context: ${HMM_APP_REPO:-../help-motivate-me}
+      dockerfile: Dockerfile
+    image: help-motivate-me:saas-local
+
+  control-plane:
+    environment:
+      TenantRuntime__Image: help-motivate-me:saas-local

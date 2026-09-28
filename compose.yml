@@ -1,0 +1,77 @@
+name: help-motivate-me-saas
+
+services:
+  traefik:
+    image: traefik:v3.6
+    environment:
+      DOCKER_API_VERSION: "1.40"
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=help-motivate-me-saas-proxy
+    ports:
+      - "${SAAS_HTTP_PORT:-8088}:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8089}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: help-motivate-me-saas:local
+    user: root
+    environment:
+      ConnectionStrings__ControlPlane: Data Source=/data/control-plane.db
+      TenantRuntime__DockerEndpoint: unix:///var/run/docker.sock
+      TenantRuntime__Image: ${HMM_TENANT_IMAGE:-ghcr.io/topswagcode/help-motivate-me:main}
+      TenantRuntime__Network: help-motivate-me-saas-proxy
+      TenantRuntime__BaseDomain: localhost
+      TenantRuntime__PublicPort: ${SAAS_HTTP_PORT:-8088}
+      TenantRuntime__IdleTimeoutMinutes: ${SAAS_IDLE_TIMEOUT_MINUTES:-3}
+      TenantRuntime__IdleSweepSeconds: ${SAAS_IDLE_SWEEP_SECONDS:-10}
+      TenantRuntime__ManagedAiApiKey: ${SAAS_MANAGED_AI_API_KEY:-}
+      TenantRuntime__ManagedAiProvider: OpenAI
+      TenantRuntime__ManagedAiModel: gpt-4.1-mini
+      TenantRuntime__ControlPlaneVolumeName: help-motivate-me-saas_control-plane-data
+      TenantRuntime__BackupRootPath: /data/backups
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - control-plane-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: help-motivate-me-saas-proxy
+      traefik.http.routers.control.rule: Host(`saas.localhost`) || Host(`localhost`)
+      traefik.http.routers.control.entrypoints: web
+      traefik.http.routers.control.priority: "100"
+      traefik.http.routers.fallback.rule: HostRegexp(`[a-z0-9-]+\.localhost`)
+      traefik.http.routers.fallback.entrypoints: web
+      traefik.http.routers.fallback.priority: "1"
+      traefik.http.services.control.loadbalancer.server.port: "8080"
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      interval: 2s
+      timeout: 5s
+      retries: 3
+      start_period: 2s
+    restart: unless-stopped
+
+  tenant-image:
+    image: ${HMM_TENANT_IMAGE:-ghcr.io/topswagcode/help-motivate-me:main}
+    entrypoint: ["/bin/true"]
+    profiles: ["bootstrap"]
+
+networks:
+  proxy:
+    name: help-motivate-me-saas-proxy
+
+volumes:
+  control-plane-data:

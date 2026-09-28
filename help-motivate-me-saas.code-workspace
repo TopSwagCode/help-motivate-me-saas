@@ -1,0 +1,9 @@
+{
+  "folders": [
+    { "name": "SaaS", "path": "." },
+    { "name": "Tenant app", "path": "../help-motivate-me" }
+  ],
+  "settings": {
+    "dotnet.defaultSolution": "HelpMotivateMe.SaaS.slnx"
+  }
+}

@@ -1,0 +1,15 @@
+**/bin
+**/obj
+**/TestResults
+.git
+.github
+.devcontainer
+.env
+.env.*
+docs
+ideas
+*.code-workspace
+*.tar.gz
+*.dump
+backup
+backups
