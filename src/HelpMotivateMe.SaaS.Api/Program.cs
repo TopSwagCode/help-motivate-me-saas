@@ -19,7 +19,9 @@ builder.Services.AddDbContext<ControlPlaneDbContext>(options =>
 builder.Services.AddSingleton<ITenantRuntime, DockerTenantRuntime>();
 builder.Services.AddSingleton<TenantOperationLocks>();
 builder.Services.AddSingleton<TenantStartQueue>();
+builder.Services.AddSingleton<TenantDeploymentQueue>();
 builder.Services.AddHostedService<TenantStartWorker>();
+builder.Services.AddHostedService<TenantDeploymentWorker>();
 builder.Services.AddHostedService<IdleTenantWorker>();
 builder.Services.AddScoped<TenantLifecycleService>();
 
@@ -34,7 +36,9 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
+app.UseStaticFiles();
 app.MapTenantEndpoints();
+app.MapDeploymentEndpoints();
 app.MapGet("/internal/tenants/{id:guid}/activity", TenantEndpoints.TrackActivityAsync);
 app.MapGet("/health/live", () => TypedResults.Ok(new { status = "live" }));
 app.MapGet("/health/ready", async (ControlPlaneDbContext db, CancellationToken cancellationToken) =>

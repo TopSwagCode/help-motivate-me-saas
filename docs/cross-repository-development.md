@@ -31,6 +31,14 @@ docker compose -f compose.yml -f compose.local.yml --profile bootstrap build
 docker compose -f compose.yml -f compose.local.yml up -d --build --wait
 ```
 
+Rebuild the bootstrap image after every tenant application change and before provisioning a Habit Space:
+
+```bash
+docker compose -f compose.yml -f compose.local.yml --profile bootstrap build tenant-image
+```
+
+Docker resolves the image tag when a tenant container is created. Rebuilding `help-motivate-me:saas-local` does not update existing tenant containers, and Restart starts the same container again. To move an existing Habit Space to the rebuilt image while preserving its `/data` volume, open its management page and save Settings without changing them. This uses the control plane's safe container-replacement path.
+
 For another checkout location:
 
 ```bash
@@ -92,6 +100,7 @@ For a cross-repository runtime change, also verify:
 - tenant data survives container replacement;
 - a stopped tenant wakes from its hostname;
 - settings replacement preserves data and applies configuration;
+- the runtime manifest uses the configured Habit Space name and generated VAPID keys survive replacement;
 - backup and restore complete with the tenant stopped;
 - the base Compose stack works with a published image and no sibling checkout.
 

@@ -14,4 +14,4 @@ public interface ITenantRuntime
     Task<TenantRuntimeState> InspectAsync(Tenant tenant, CancellationToken cancellationToken);
 }
 
-public sealed record TenantRuntimeState(bool Exists, bool Running, bool Healthy);
+public sealed record TenantRuntimeState(bool Exists, bool Running, bool Healthy, string? ImageId = null);

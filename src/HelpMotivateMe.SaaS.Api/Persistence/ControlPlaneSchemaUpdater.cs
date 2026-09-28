@@ -8,6 +8,7 @@ public static class ControlPlaneSchemaUpdater
     private static readonly IReadOnlyDictionary<string, string> Columns = new Dictionary<string, string>
     {
         ["OwnerEmail"] = "TEXT NOT NULL DEFAULT ''",
+        ["AppName"] = "TEXT NOT NULL DEFAULT ''",
         ["Plan"] = "TEXT NOT NULL DEFAULT 'Free'",
         ["AiMode"] = "TEXT NOT NULL DEFAULT 'Disabled'",
         ["AiProvider"] = "TEXT NULL",
@@ -62,6 +63,12 @@ public static class ControlPlaneSchemaUpdater
 
                 await using var command = connection.CreateCommand();
                 command.CommandText = $"ALTER TABLE Tenants ADD COLUMN {name} {definition}";
+                await command.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            await using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "UPDATE Tenants SET AppName = Subdomain WHERE AppName = ''";
                 await command.ExecuteNonQueryAsync(cancellationToken);
             }
         }

@@ -5,6 +5,7 @@ public sealed class Tenant
     public Guid Id { get; init; }
     public required string OwnerEmail { get; init; }
     public required string Subdomain { get; init; }
+    public required string AppName { get; set; }
     public required string Username { get; set; }
     public required string VolumeName { get; init; }
     public string? ContainerId { get; set; }
@@ -43,6 +44,7 @@ public enum TenantAiMode
 }
 
 public sealed record TenantConfiguration(
+    string AppName,
     string Username,
     string Password,
     TenantAiMode AiMode,

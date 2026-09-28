@@ -21,13 +21,13 @@ docker compose -f compose.yml -f compose.local.yml up -d --build --wait
 
 Open <http://saas.localhost:8088>. No DNS or hosts-file changes are normally needed: browsers and operating systems resolve `*.localhost` to the loopback interface.
 
-The first signup choice links to the free, fully self-hosted application, where operators provide their own AI key and manage their own backups. Free and Paid-preview hosted choices provision a local workspace and redirect to a workspace-specific management page where you can open, start, stop, restart, and configure the instance. Use the credentials entered in the create form to sign in.
+The first signup choice links to the free, fully self-hosted application, where operators provide their own AI key and manage their own backups. Free and Paid-preview hosted choices provision a local Habit Space and redirect to its management page, where you can open, start, stop, restart, and configure the instance. The chosen Habit Space name becomes the installed PWA name. Each tenant generates its own push-notification keypair inside its persistent volume. Use the credentials entered in the create form to sign in.
 
 The local pages are:
 
 - Signup: <http://saas.localhost:8088/>
 - Administration: <http://saas.localhost:8088/admin>
-- Workspace management: `http://saas.localhost:8088/workspace/{tenant-id}`
+- Habit Space management: `http://saas.localhost:8088/workspace/{tenant-id}`
 
 Set `SAAS_MANAGED_AI_API_KEY` before starting Compose to test supplied AI on a Paid-preview workspace. Without it, Paid workspaces can still be created with AI disabled.
 
@@ -40,7 +40,7 @@ curl -H 'Host: demo.localhost' http://127.0.0.1:8088/health/ready
 
 ## Test Wake-Up
 
-Stop a workspace from the dashboard, then revisit its tenant URL. Traefik sends the request to the fallback route, which queues the container start and returns a page that refreshes until the exact tenant route becomes healthy.
+Stop a Habit Space from the dashboard, then revisit its tenant URL. Traefik sends the request to the fallback route, which queues the container start and returns a page that refreshes until the exact tenant route becomes healthy.
 
 Useful commands:
 
@@ -51,7 +51,7 @@ docker ps --filter label=com.helpmotivateme.managed=true
 dotnet test HelpMotivateMe.SaaS.slnx
 ```
 
-See [docs/testing-scale-to-zero.md](docs/testing-scale-to-zero.md) for the full one-minute idle shutdown and automatic-wake procedure. The tenant image integration boundary is documented in [docs/tenant-runtime-contract.md](docs/tenant-runtime-contract.md). Use [docs/cross-repository-development.md](docs/cross-repository-development.md) when a feature changes both repositories.
+See [docs/testing-scale-to-zero.md](docs/testing-scale-to-zero.md) for the full one-minute idle shutdown and automatic-wake procedure. The tenant image integration boundary is documented in [docs/tenant-runtime-contract.md](docs/tenant-runtime-contract.md). Use [docs/cross-repository-development.md](docs/cross-repository-development.md) when a feature changes both repositories, and [docs/production-rollout-runbook.md](docs/production-rollout-runbook.md) to prepare safe staged releases and rollbacks before production. Admin and hosted pages must follow [docs/admin-design-guide.md](docs/admin-design-guide.md).
 
 ## Stop and Reset
 
@@ -77,12 +77,12 @@ Included:
 
 - local `*.localhost` routing through Traefik
 - isolated container and persistent volume per tenant
-- plan-aware signup plus workspace and administration views
+- plan-aware signup plus Habit Space and administration views
 - tenant creation, start, stop, restart, settings replacement, health wait, and automatic wake-up
 - activity-aware idle shutdown after 3 minutes in the local Compose stack
 - persistent control-plane metadata
-- Free workspaces with optional bring-your-own OpenAI configuration
-- Paid-preview workspaces with optional operator-supplied AI
+- Free Habit Spaces with optional bring-your-own OpenAI configuration
+- Paid-preview Habit Spaces with optional operator-supplied AI
 - local paid-only managed backup history and restore
 - workspace counts, type, state, last login, and estimated uptime
 - a narrow runtime abstraction ready for future entitlement and payment work

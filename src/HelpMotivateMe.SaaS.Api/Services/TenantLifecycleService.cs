@@ -111,6 +111,36 @@ public sealed class TenantLifecycleService(
         return true;
     }
 
+    public async Task<bool> DeployLatestAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        using var tenantLock = await operationLocks.AcquireAsync(tenantId, cancellationToken);
+        var tenant = await db.Tenants.SingleOrDefaultAsync(item => item.Id == tenantId, cancellationToken);
+        if (tenant is null) return false;
+
+        var state = await runtime.InspectAsync(tenant, cancellationToken);
+        if (!state.Exists) throw new InvalidOperationException("The tenant container no longer exists.");
+
+        var wasRunning = state.Running;
+        var configuration = await runtime.ReadConfigurationAsync(tenant, cancellationToken);
+        if (wasRunning) AccumulateUptime(tenant);
+
+        tenant.ContainerId = await runtime.ReplaceAsync(tenant, configuration, cancellationToken);
+        tenant.Status = TenantStatus.Running;
+        tenant.LastStartedUtc = DateTimeOffset.UtcNow;
+        tenant.LastRequestUtc = tenant.LastStartedUtc.Value;
+        await db.SaveChangesAsync(cancellationToken);
+
+        if (!wasRunning)
+        {
+            await runtime.StopAsync(tenant, cancellationToken);
+            tenant.Status = TenantStatus.Stopped;
+            tenant.LastStartedUtc = null;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return true;
+    }
+
     public async Task<bool> ReconfigureAsync(Guid tenantId, TenantSettingsUpdate update,
         CancellationToken cancellationToken)
     {
@@ -132,6 +162,7 @@ public sealed class TenantLifecycleService(
             throw new ArgumentException("An AI API key is required when AI is enabled on the Free plan.");
 
         var configuration = new TenantConfiguration(
+            update.AppName.Trim(),
             update.Username.Trim(),
             string.IsNullOrEmpty(update.Password) ? current.Password : update.Password,
             aiMode,
@@ -141,6 +172,7 @@ public sealed class TenantLifecycleService(
 
         if (tenant.Status == TenantStatus.Running) AccumulateUptime(tenant);
         tenant.ContainerId = await runtime.ReplaceAsync(tenant, configuration, cancellationToken);
+        tenant.AppName = configuration.AppName;
         tenant.Username = configuration.Username;
         tenant.AiMode = aiMode;
         tenant.AiProvider = configuration.AiProvider;
@@ -269,6 +301,7 @@ public sealed class TenantLifecycleService(
 }
 
 public sealed record TenantSettingsUpdate(
+    string AppName,
     string Username,
     string? Password,
     bool EnableAi,

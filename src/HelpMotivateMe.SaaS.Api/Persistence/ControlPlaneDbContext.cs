@@ -16,6 +16,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
             tenant.HasIndex(item => item.Subdomain).IsUnique();
             tenant.Property(item => item.OwnerEmail).HasMaxLength(254);
             tenant.Property(item => item.Subdomain).HasMaxLength(63);
+            tenant.Property(item => item.AppName).HasMaxLength(30);
             tenant.Property(item => item.Username).HasMaxLength(100);
             tenant.Property(item => item.ContainerId).HasMaxLength(128);
             tenant.Property(item => item.VolumeName).HasMaxLength(128);

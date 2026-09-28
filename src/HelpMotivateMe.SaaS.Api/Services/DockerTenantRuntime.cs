@@ -28,7 +28,7 @@ public sealed class DockerTenantRuntime : ITenantRuntime, IDisposable
         {
             Name = resourceName,
             Image = _options.Image,
-            Env = BuildEnvironment(configuration),
+            Env = BuildEnvironment(configuration, _options),
             Healthcheck = new HealthConfig
             {
                 Test = ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"],
@@ -74,6 +74,7 @@ public sealed class DockerTenantRuntime : ITenantRuntime, IDisposable
         var environment = container.Config.Env ?? [];
 
         return new TenantConfiguration(
+            NullIfEmpty(GetEnvironmentValue(environment, "Pwa__Name")) ?? tenant.AppName,
             GetEnvironmentValue(environment, "SingleUser__Username"),
             GetEnvironmentValue(environment, "SingleUser__Password"),
             tenant.AiMode,
@@ -189,7 +190,8 @@ public sealed class DockerTenantRuntime : ITenantRuntime, IDisposable
             var container = await _client.Containers.InspectContainerAsync(tenant.ContainerId, cancellationToken);
             VerifyOwnership(container.Config.Labels, tenant.Id);
             return new TenantRuntimeState(true, container.State.Running,
-                string.Equals(container.State.Health?.Status, "healthy", StringComparison.OrdinalIgnoreCase));
+                string.Equals(container.State.Health?.Status, "healthy", StringComparison.OrdinalIgnoreCase),
+                container.Image);
         }
         catch (DockerContainerNotFoundException)
         {
@@ -283,21 +285,23 @@ public sealed class DockerTenantRuntime : ITenantRuntime, IDisposable
     private static string GetBackupRelativePath(Guid tenantId, Guid backupId) =>
         $"backups/{tenantId:N}/{backupId:N}.tar.gz";
 
-    private List<string> BuildEnvironment(TenantConfiguration configuration)
+    internal static List<string> BuildEnvironment(TenantConfiguration configuration, TenantRuntimeOptions options)
     {
         var apiKey = configuration.AiMode == TenantAiMode.Managed
-            ? _options.ManagedAiApiKey
+            ? options.ManagedAiApiKey
             : configuration.AiApiKey ?? string.Empty;
         var provider = configuration.AiMode == TenantAiMode.Managed
-            ? _options.ManagedAiProvider
+            ? options.ManagedAiProvider
             : configuration.AiProvider ?? "OpenAI";
         var model = configuration.AiMode == TenantAiMode.Managed
-            ? _options.ManagedAiModel
+            ? options.ManagedAiModel
             : configuration.AiModel ?? "gpt-4.1-mini";
 
         return
         [
             "ASPNETCORE_ENVIRONMENT=Production",
+            $"Pwa__Name={configuration.AppName}",
+            $"Pwa__ShortName={configuration.AppName}",
             $"SingleUser__Username={configuration.Username}",
             $"SingleUser__Password={configuration.Password}",
             $"SingleUser__DisplayName={configuration.Username}",
